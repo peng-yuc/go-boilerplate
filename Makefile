@@ -40,4 +40,12 @@ test:
 server:
 	go run main.go
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server
+# Generate a mock implementation located at `db/mock/store.go` of the `Store`
+# interface in the `github.com/walkccc/go-boilerplate/db/sqlc` package.
+#
+# This mock implementation can then be used for testing purposes.
+mockgen:
+	mockgen -package mockdb -destination db/mock/store.go \
+			github.com/walkccc/go-boilerplate/db/sqlc Store
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock
