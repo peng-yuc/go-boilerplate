@@ -27,4 +27,8 @@ migratedown:
 			-database "postgresql://root:password@localhost:5432/bank?sslmode=disable" \
 			-verbose down
 
-.PHONY: postgres createdb dropdb migrateup migratedown
+# Codegen CRUD code from "./db/query/" to "./db/sqlc/".
+sqlc:
+	sqlc generate
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc

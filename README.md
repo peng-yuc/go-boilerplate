@@ -103,3 +103,32 @@ make createdb
 # Migrate up to create tables in the db.
 make migrateup
 ```
+
+### Codegen via sqlc
+
+```bash
+# Install sqlc.
+brew install sqlc
+
+# Check the installed sqlc.
+sqlc version
+```
+
+Initialize [`sqlc.yaml`](./sqlc.yaml) and copy the initial config from
+[Getting started with PostgreSQL](https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html#getting-started-with-postgresql)
+with some modifications.
+
+```bash
+sqlc init
+```
+
+Add the queries in [account.sql](./db/query/account.sql), then `sqlc generate`
+to codegen.
+
+```bash
+# Codegen.
+make sqlc
+
+# Eliminate red lines inside `db/sqlc/account.sql`.
+go mod init github.com/walkccc/go-boilerplate
+```
