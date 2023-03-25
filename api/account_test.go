@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	mockdb "github.com/walkccc/go-boilerplate/db/mock"
 	db "github.com/walkccc/go-boilerplate/db/sqlc"
@@ -55,6 +56,40 @@ func TestCreateAccountAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "Forbidden_NonExistedUser",
+			body: gin.H{
+				"owner":    account.Owner,
+				"currency": account.Currency,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					// 23503 := foreign_key_violation
+					Return(db.Account{}, &pq.Error{Code: "23503"})
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "Forbidden_DuplicateAccount",
+			body: gin.H{
+				"owner":    account.Owner,
+				"currency": account.Currency,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					// 23505 := unique_violation
+					Return(db.Account{}, &pq.Error{Code: "23505"})
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
 		},
 		{
