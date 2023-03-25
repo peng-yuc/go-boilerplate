@@ -74,3 +74,32 @@ brew install tableplus
 Connect to Postgres with the setting
 
 ![](https://i.imgur.com/jgHY7h3.png)
+
+### Database Migration
+
+```bash
+# Install `migrate` command.
+brew install golang-migrate
+
+# Check the installed `migrate` command.
+migrate --version
+
+# Create the db migration directory.
+mkdir -p db/migration
+
+# Create the first migration script.
+migrate create -ext sql -dir db/migration -seq init_schema
+```
+
+Now, create a [Makefile](./Makefile) to save time and run the following:
+
+```bash
+# Run a PostgresSQL container.
+make postgres
+
+# Create a db called "bank" in this tutorial.
+make createdb
+
+# Migrate up to create tables in the db.
+make migrateup
+```
