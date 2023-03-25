@@ -20,6 +20,8 @@ import (
 	"github.com/walkccc/go-boilerplate/util"
 )
 
+const unauthorizedUsername = "unauthorized_username"
+
 type eqCreateUserParamsMatcher struct {
 	arg      db.CreateUserParams
 	password string
