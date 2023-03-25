@@ -20,3 +20,57 @@ code --install-extension foxundermoon.shell-format
 code --install-extension mtxr.sqltools
 code --install-extension golang.go
 ```
+
+### Install [Docker](https://www.docker.com) and [PostgresSQL image](https://hub.docker.com/_/postgres).
+
+```bash
+# Install Docker.
+brew install docker
+
+# Run Docker app so that we can access the `docker` command.
+
+# Pull the PostgresSQL image.
+docker pull postgres:15.2-alpine
+
+# Check the downloaded image.
+docker images
+```
+
+### Run a Docker container using the official PostgresSQL image.
+
+Creates and runs a Docker container with the name `postgres`, using the official
+`postgres:15-alpine` Docker image. The container is started as a background
+process (`-d` flag) and is mapped to port `5432` of the host machine
+(`-p 127.0.0.1:5432:5432/tcp` flag), which is the default port for PostgreSQL.
+
+The container is also configured with the environment variables `POSTGRES_USER`
+and `POSTGRES_PASSWORD`, which set the default username and password for the
+PostgreSQL database. In this case, the username is set to `root` and the
+password is set to `password`.
+
+```bash
+docker run --name postgres \
+  -p 127.0.0.1:5432:5432/tcp \
+  -e POSTGRES_USER=root \
+  -e POSTGRES_PASSWORD=password \
+  -d postgres:15.2-alpine
+```
+
+```bash
+# Enter the Postgres shell.
+docker exec -it postgres psql -U root
+
+# Try the following query in the shell.
+SELECT now();
+```
+
+### Install [TablePlus](https://tableplus.com)
+
+```bash
+# Install TablePlus.
+brew install tableplus
+```
+
+Connect to Postgres with the setting
+
+![](https://i.imgur.com/jgHY7h3.png)
