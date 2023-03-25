@@ -477,6 +477,90 @@ func TestUpdateAccountAPI(t *testing.T) {
 	}
 }
 
+func TestDeleteAccountAPI(t *testing.T) {
+	accountID := int64(1)
+
+	testCases := []struct {
+		name          string
+		accountID     int64
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:      "BadRequest_InvalidID",
+			accountID: 0,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:      "NotFound",
+			accountID: accountID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), accountID).
+					Times(1).
+					Return(sql.ErrNoRows)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name:      "InternalServerError",
+			accountID: accountID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), accountID).
+					Times(1).
+					Return(sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name:      "OK",
+			accountID: accountID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), accountID).
+					Times(1).
+					Return(nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			testCase.buildStubs(store)
+
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/accounts/%d", testCase.accountID)
+			request, err := http.NewRequest(http.MethodDelete, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			testCase.checkResponse(recorder)
+		})
+	}
+}
+
 func randomAccount() db.Account {
 	return db.Account{
 		ID:       util.RandomInt(1, 1000),
