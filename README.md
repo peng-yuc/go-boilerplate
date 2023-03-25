@@ -158,3 +158,11 @@ go install github.com/golang/mock/mockgen@v1.6.0
 # Check the installed mockgen.
 which mockgen
 ```
+
+### Create Docker image
+
+```bash
+# Creates a Docker image with the name "bank" and the tag "latest" using the
+# Dockerfile in the current directory.
+docker build -t bank:latest .
+```
