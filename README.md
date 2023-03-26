@@ -478,3 +478,13 @@ curl -X POST \
 1. Option+S to search "EC2".
    - Go to "Instance Types" and filter by "Free-Tier eligible = true".
      ![](https://i.imgur.com/8R2BaIi.png)
+
+### AWS ECR
+
+```bash
+REPOSITORY_NAME=bank
+```
+
+```bash
+aws ecr create-repository --repository-name $REPOSITORY_NAME
+```
