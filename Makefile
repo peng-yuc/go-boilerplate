@@ -19,13 +19,13 @@ dropdb:
 migrateup:
 	migrate -path db/migration \
 			-database "postgresql://root:password@localhost:5432/bank?sslmode=disable" \
-			-verbose up
+			-verbose up $(ARGS)
 
 # Migrate down to drop tables in "bank".
 migratedown:
 	migrate -path db/migration \
 			-database "postgresql://root:password@localhost:5432/bank?sslmode=disable" \
-			-verbose down
+			-verbose down $(ARGS)
 
 # Codegen CRUD code from "./db/query/" to "./db/sqlc/".
 sqlc:
