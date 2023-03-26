@@ -469,3 +469,12 @@ curl -X POST \
 #    }
 # }
 ```
+
+### Create free-tier AWS account
+
+1. Sign up in [AWS](https://aws.amazon.com).
+1. Go to the AWS Management Console.
+   - Sign in as Root user using the email you signed up.
+1. Option+S to search "EC2".
+   - Go to "Instance Types" and filter by "Free-Tier eligible = true".
+     ![](https://i.imgur.com/8R2BaIi.png)
