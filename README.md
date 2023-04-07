@@ -582,3 +582,31 @@ aws rds delete-db-instance --db-instance-identifier bank --skip-final-snapshot
 ```bash
 aws ec2 delete-security-group --group-name AccessPostgresAnywhere
 ```
+
+### AWS Secrets Manager
+
+```bash
+AWS_SECRET_ID=AWSSecretId
+PASSWORD=password
+DB_SOURCE=$(aws rds describe-db-instances \
+    --db-instance-identifier bank --no-paginate | jq -r \
+    '.DBInstances[0] | "postgresql://" + .MasterUsername + ":" + "'$PASSWORD'" + "@" + .Endpoint.Address + ":" + (.Endpoint.Port | tostring) + "/bank"')
+```
+
+```bash
+aws secretsmanager create-secret \
+    --name $AWS_SECRET_ID \
+    --description "Environment variables used in bank db" \
+    --secret-string '{
+        "DB_DRIVER": "postgres",
+        "DB_SOURCE": "'$DB_SOURCE'",
+        "SERVER_ADDRESS": "0.0.0.0:8080",
+        "TOKEN_SYMMETRIC_KEY": "'$(openssl rand -hex 64 | head -c 32)'",
+        "ACCESS_TOKEN_DURATION": "15m"}'
+```
+
+```bash
+aws iam attach-role-policy \
+    --role-name $GITHUB_ACTIONS_ROLE \
+    --policy-arn arn:aws:iam::aws:policy/SecretsManagerReadWrite
+```
