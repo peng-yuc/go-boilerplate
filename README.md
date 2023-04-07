@@ -488,3 +488,54 @@ REPOSITORY_NAME=bank
 ```bash
 aws ecr create-repository --repository-name $REPOSITORY_NAME
 ```
+
+### AWS Role - Access AWS ECR by GitHub Actions Workflow
+
+```bash
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+REPO_URI_PATTERN="repo:walkccc/go-boilerplate:*"
+GITHUB_ACTIONS_ROLE="GitHubActionsRole"
+```
+
+```bash
+aws iam create-role \
+    --role-name GitHubActionsRole \
+    --assume-role-policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::'"$AWS_ACCOUNT_ID"':oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringEquals": {
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+              },
+              "StringLike": {
+                "token.actions.githubusercontent.com:sub": "'$REPO_URI_PATTERN'"
+              }
+            }
+          }
+        ]
+      }'
+```
+
+```bash
+aws iam attach-role-policy \
+    --role-name $GITHUB_ACTIONS_ROLE \
+    --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+```
+
+To delete the role, you need to detach the policy first:
+
+```bash
+aws iam detach-role-policy \
+    --role-name $GITHUB_ACTIONS_ROLE \
+    --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+```
+
+```bash
+aws iam delete-role --role-name $GITHUB_ACTIONS_ROLE
+```
