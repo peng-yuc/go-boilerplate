@@ -539,3 +539,46 @@ aws iam detach-role-policy \
 ```bash
 aws iam delete-role --role-name $GITHUB_ACTIONS_ROLE
 ```
+
+### AWS RDS
+
+```bash
+VPC_SECURITY_GROUP_ID=$(aws ec2 create-security-group \
+    --group-name AccessPostgresAnywhere \
+    --description "Access Postgres anywhere" | jq -r '.GroupId')
+```
+
+```bash
+aws ec2 authorize-security-group-ingress \
+    --group-name AccessPostgresAnywhere \
+    --protocol tcp \
+    --port 5432 \
+    --cidr 0.0.0.0/0
+```
+
+```bash
+aws rds create-db-instance \
+    --engine postgres \
+    --engine-version 15.2 \
+    --db-instance-identifier bank \
+    --master-username root \
+    --master-user-password password \
+    --db-instance-class db.t3.micro \
+    --allocated-storage 20  \
+    --publicly-accessible \
+    --vpc-security-group-ids $VPC_SECURITY_GROUP_ID \
+    --enable-performance-insights \
+    --db-name bank \
+    --backup-retention-period 7 \
+    --auto-minor-version-upgrade
+```
+
+To delete the security group, you need to delete the DB instance first:
+
+```bash
+aws rds delete-db-instance --db-instance-identifier bank --skip-final-snapshot
+```
+
+```bash
+aws ec2 delete-security-group --group-name AccessPostgresAnywhere
+```
