@@ -610,3 +610,15 @@ aws iam attach-role-policy \
     --role-name $GITHUB_ACTIONS_ROLE \
     --policy-arn arn:aws:iam::aws:policy/SecretsManagerReadWrite
 ```
+
+### Pull Docker image from AWS ECR to run locally
+
+```bash
+aws ecr get-login-password | docker login --username AWS \
+    --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+```
+
+```bash
+docker pull $IMAGE_URL
+docker run -p 8080:8080 $IMAGE_URL
+```
