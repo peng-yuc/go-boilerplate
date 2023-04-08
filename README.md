@@ -622,3 +622,143 @@ aws ecr get-login-password | docker login --username AWS \
 docker pull $IMAGE_URL
 docker run -p 8080:8080 $IMAGE_URL
 ```
+
+### AWS EKS
+
+```bash
+aws iam create-role \
+    --role-name AWSEKSClusterRole \
+    --assume-role-policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["eks.amazonaws.com"]
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }'
+```
+
+```bash
+aws iam attach-role-policy \
+    --role-name AWSEKSClusterRole \
+    --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+```
+
+```bash
+ROLE_ARN=$(aws iam get-role \
+    --role-name AWSEKSWorkerNodeRole \
+    --query 'Role.Arn' \
+    --output text)
+```
+
+Filter out subnets with specific `AvailabilityZone` if got error like this:
+
+```
+An error occurred (UnsupportedAvailabilityZoneException) when calling the
+CreateCluster operation: Cannot create cluster 'bank' because us-east-1e, the
+targeted availability zone, does not currently have sufficient capacity to
+support the cluster. Retry and choose from these availability zones: us-east-1a,
+us-east-1b, us-east-1c, us-east-1d, us-east-1f
+```
+
+```bash
+SUBNET_IDS=$(aws ec2 describe-subnets \
+    | jq '.Subnets | map(select(.AvailabilityZone != "us-east-1e")) []' \
+    | jq '.SubnetId' | jq -srR 'split("\n") | .[:-1] | join(",")')
+```
+
+```
+aws eks create-cluster \
+    --name bank \
+    --kubernetes-version 1.25 \
+    --role-arn $ROLE_ARN \
+    --resources-vpc-config '{
+        "subnetIds": ['$SUBNET_IDS'],
+        "endpointPublicAccess": true,
+        "endpointPrivateAccess": true
+      }'
+```
+
+Now, add worker node to the cluster:
+
+```bash
+aws iam create-role \
+    --role-name AWSEKSWorkerNodeRole \
+    --assume-role-policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["ec2.amazonaws.com"]
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }'
+```
+
+```bash
+aws iam attach-role-policy \
+    --role-name AWSEKSWorkerNodeRole \
+    --policy-arn arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+aws iam attach-role-policy \
+    --role-name AWSEKSWorkerNodeRole \
+    --policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+aws iam attach-role-policy \
+    --role-name AWSEKSWorkerNodeRole \
+    --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+```
+
+```bash
+NODE_ROLE=$(aws iam get-role \
+    --role-name AWSEKSWorkerNodeRole \
+    --query 'Role.Arn' \
+    --output text)
+```
+
+```bash
+SUBNETS=($(aws ec2 describe-subnets \
+    --query "Subnets[*].SubnetId" \
+    --output text))
+```
+
+To only select specific subnets:
+
+```bash
+SUBNETS=($(aws ec2 describe-subnets \
+    --filters "Name=availability-zone,Values=us-east-1a,us-east-1b" \
+    --query "Subnets[*].SubnetId" \
+    --output text))
+```
+
+```bash
+aws eks create-nodegroup \
+    --cluster-name bank \
+    --nodegroup-name bank \
+    --node-role $NODE_ROLE \
+    --capacity-type ON_DEMAND \
+    --instance-types t3.micro \
+    --disk-size 10 \
+    --scaling-config '{
+        "minSize": 1,
+        "maxSize": 2,
+        "desiredSize": 1
+      }' \
+    --update-config '{
+        "maxUnavailable": 1
+      }' \
+    --subnets $SUBNETS
+```
+
+To delete a worker node in a cluster:
+
+```bash
+aws eks delete-nodegroup \
+    --cluster-name bank \
+    --nodegroup-name bank
+```
